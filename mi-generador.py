@@ -5,12 +5,18 @@ import os
 def generate_compose(filename, count):
     current_uid = os.getuid()
     current_gid = os.getgid()
+
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+
     compose_data = {
         "name": "tp0",
         "services": {
             "server": {
                 "container_name": "server",
                 "image": "server:latest",
+                "user": f"{current_uid}:{current_gid}",
                 "entrypoint": "python3 /main.py",
                 "environment": [
                     "PYTHONUNBUFFERED=1",
