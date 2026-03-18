@@ -1,0 +1,55 @@
+import sys
+import yaml
+
+def generate_compose(filename, count):
+    compose_data = {
+        "name": "tp0",
+        "services": {
+            "server": {
+                "container_name": "server",
+                "image": "server:latest",
+                "entrypoint": "python3 /main.py",
+                "environment": [
+                    "PYTHONUNBUFFERED=1",
+                    "LOGGING_LEVEL=DEBUG"
+                ],
+                "networks": ["testing-net"],
+            }
+        },
+        "networks": {
+            "testing-net": {
+                "ipam": {
+                    "driver": "default",
+                    "config": [
+                        {"subnet": "172.25.125.0/24"}
+                    ]
+                }
+            }
+        }
+    }
+
+    for i in range(1, int(count) + 1):
+        name = f"client{i}"
+        compose_data["services"][name] = {
+            "image": "client:latest",
+            "container_name": name,
+            "entrypoint": "/client",
+            "networks": ["testing-net"],
+            "environment": [
+                f"CLI_ID={i}",
+                "CLI_LOG_LEVEL=DEBUG"
+            ],
+            "volumes": [
+                f"./data/{name}:/app/data"
+            ],
+            "depends_on": ["server"]
+        }
+
+    with open(filename, 'w') as f:
+        yaml.dump(compose_data, f, default_flow_style=False, sort_keys=False)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Faltan argumentos")
+        sys.exit(1)
+    generate_compose(sys.argv[1], sys.argv[2])
