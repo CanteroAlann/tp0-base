@@ -1,7 +1,10 @@
 import sys
 import yaml
+import os
 
 def generate_compose(filename, count):
+    current_uid = os.getuid()
+    current_gid = os.getgid()
     compose_data = {
         "name": "tp0",
         "services": {
@@ -34,6 +37,7 @@ def generate_compose(filename, count):
             "image": "client:latest",
             "container_name": name,
             "entrypoint": "/client",
+            "user": f"{current_uid}:{current_gid}",
             "networks": ["testing-net"],
             "environment": [
                 f"CLI_ID={i}",
