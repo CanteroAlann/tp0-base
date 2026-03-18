@@ -23,6 +23,9 @@ def generate_compose(filename, count):
                     "LOGGING_LEVEL=DEBUG"
                 ],
                 "networks": ["testing-net"],
+                "volumes": [
+                    "./server/config.ini:/config.ini:ro"
+                ]
             }
         },
         "networks": {
@@ -50,7 +53,8 @@ def generate_compose(filename, count):
                 "CLI_LOG_LEVEL=DEBUG"
             ],
             "volumes": [
-                f"./data/{name}:/app/data"
+                f"./data/{name}:/app/data",
+                "./client/config.yaml:/config.yaml:ro"
             ],
             "depends_on": ["server"]
         }
