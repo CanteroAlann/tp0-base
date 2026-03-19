@@ -19,8 +19,7 @@ def generate_compose(filename, count):
                 "user": f"{current_uid}:{current_gid}",
                 "entrypoint": "python3 /main.py",
                 "environment": [
-                    "PYTHONUNBUFFERED=1",
-                    "LOGGING_LEVEL=DEBUG"
+                    "PYTHONUNBUFFERED=1"
                 ],
                 "networks": ["testing-net"],
                 "volumes": [
@@ -49,8 +48,7 @@ def generate_compose(filename, count):
             "user": f"{current_uid}:{current_gid}",
             "networks": ["testing-net"],
             "environment": [
-                f"CLI_ID={i}",
-                "CLI_LOG_LEVEL=DEBUG"
+                f"CLI_ID={i}"
             ],
             "volumes": [
                 f"./data/{name}:/app/data",
