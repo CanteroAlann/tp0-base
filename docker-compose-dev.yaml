@@ -7,9 +7,9 @@ services:
     entrypoint: python3 /main.py
     environment:
     - PYTHONUNBUFFERED=1
-    - LOGGING_LEVEL=DEBUG
     networks:
-    - testing-net
+      testing-net:
+        ipv4_address: 172.25.125.2
     volumes:
     - ./server/config.ini:/config.ini:ro
   client1:
@@ -21,7 +21,6 @@ services:
     - testing-net
     environment:
     - CLI_ID=1
-    - CLI_LOG_LEVEL=DEBUG
     volumes:
     - ./data/client1:/app/data
     - ./client/config.yaml:/config.yaml:ro

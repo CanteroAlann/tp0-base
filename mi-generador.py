@@ -21,7 +21,10 @@ def generate_compose(filename, count):
                 "environment": [
                     "PYTHONUNBUFFERED=1"
                 ],
-                "networks": ["testing-net"],
+                "networks": {
+                    "testing-net":
+                        {"ipv4_address": "172.25.125.2"}
+                },
                 "volumes": [
                     "./server/config.ini:/config.ini:ro"
                 ]
