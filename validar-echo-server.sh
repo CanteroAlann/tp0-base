@@ -2,7 +2,7 @@
 
 SERVER_TARGET="server" 
 SERVER_PORT="12345"
-NETWORK_NAME=tp0_testing-net
+NETWORK_NAME=tp0_testing_net
 MESSAGE="testing_echo_service"
 MAX_RETRIES=5
 RETRY_COUNT=0
