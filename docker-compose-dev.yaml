@@ -8,11 +8,25 @@ services:
     environment:
     - PYTHONUNBUFFERED=1
     networks:
-    - testing-net
+    - testing_net
     volumes:
     - ./server/config.ini:/config.ini:ro
+  client1:
+    image: client:latest
+    container_name: client1
+    entrypoint: /client
+    user: 1000:1000
+    networks:
+    - testing_net
+    environment:
+    - CLI_ID=1
+    volumes:
+    - ./data/client1:/app/data
+    - ./client/config.yaml:/config.yaml:ro
+    depends_on:
+    - server
 networks:
-  testing-net:
+  testing_net:
     ipam:
       driver: default
       config:
