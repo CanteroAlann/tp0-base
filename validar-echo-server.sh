@@ -2,10 +2,10 @@
 
 SERVER_TARGET="server" 
 SERVER_PORT="12345"
-NETWORK_NAME="testing-net"
+NETWORK_NAME="tp0_testing-net"
 MESSAGE="testing_echo_service"
 
-RESPONSE=$(echo "$MESSAGE" | docker run --rm --network "$NETWORK_NAME" busybox nc -w 2 "$SERVER_TARGET" "$SERVER_PORT" 2>/dev/null)
+RESPONSE=$(echo "$MESSAGE" | docker run -i --rm --network "$NETWORK_NAME" busybox nc -w 2 "$SERVER_TARGET" "$SERVER_PORT" 2>/dev/null)
 
 if [ "$RESPONSE" = "$MESSAGE" ]; then
     echo "action: test_echo_server | result: success"

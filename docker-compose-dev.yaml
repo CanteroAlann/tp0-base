@@ -8,24 +8,9 @@ services:
     environment:
     - PYTHONUNBUFFERED=1
     networks:
-      testing-net:
-        ipv4_address: 172.25.125.2
+    - testing-net
     volumes:
     - ./server/config.ini:/config.ini:ro
-  client1:
-    image: client:latest
-    container_name: client1
-    entrypoint: /client
-    user: 1000:1000
-    networks:
-    - testing-net
-    environment:
-    - CLI_ID=1
-    volumes:
-    - ./data/client1:/app/data
-    - ./client/config.yaml:/config.yaml:ro
-    depends_on:
-    - server
 networks:
   testing-net:
     ipam:
