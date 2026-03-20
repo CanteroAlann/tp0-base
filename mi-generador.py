@@ -21,14 +21,14 @@ def generate_compose(filename, count):
                 "environment": [
                     "PYTHONUNBUFFERED=1"
                 ],
-                "networks": ["testing-net"],
+                "networks": ["testing_net"],
                 "volumes": [
                     "./server/config.ini:/config.ini:ro"
                 ]
             }
         },
         "networks": {
-            "testing-net": {
+            "testing_net": {
                 "ipam": {
                     "driver": "default",
                     "config": [
@@ -46,7 +46,7 @@ def generate_compose(filename, count):
             "container_name": name,
             "entrypoint": "/client",
             "user": f"{current_uid}:{current_gid}",
-            "networks": ["testing-net"],
+            "networks": ["testing_net"],
             "environment": [
                 f"CLI_ID={i}"
             ],
