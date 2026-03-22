@@ -9,6 +9,12 @@ def generate_compose(filename, count):
     if not os.path.exists("data"):
         os.makedirs("data")
 
+    PATH_STORAGE = "./server/bets.csv"
+    if not os.path.exists(PATH_STORAGE):
+        open(PATH_STORAGE, 'a').close()
+
+    
+
 
     compose_data = {
         "name": "tp0",
@@ -23,7 +29,8 @@ def generate_compose(filename, count):
                 ],
                 "networks": ["testing_net"],
                 "volumes": [
-                    "./server/config.ini:/config.ini:ro"
+                    "./server/config.ini:/config.ini:ro",
+                    f"{PATH_STORAGE}:/bets.csv:rw"
                 ]
             }
         },

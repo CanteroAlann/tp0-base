@@ -11,6 +11,7 @@ services:
     - testing_net
     volumes:
     - ./server/config.ini:/config.ini:ro
+    - ./server/bets.csv:/bets.csv:rw
   client1:
     image: client:latest
     container_name: client1

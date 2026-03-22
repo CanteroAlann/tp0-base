@@ -41,3 +41,7 @@ docker-compose-logs:
 docker-compose-log-client:
 	docker compose -f docker-compose-dev.yaml logs -f client1
 .PHONY: docker-compose-log-client
+
+docker-compose-log-server:
+	docker compose -f docker-compose-dev.yaml logs -f server
+.PHONY: docker-compose-log-client

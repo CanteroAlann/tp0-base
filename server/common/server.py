@@ -3,7 +3,7 @@ import logging
 import signal
 
 from common.protocol import ProtocolError, encode_response_message, receive_user_data
-from common.utils import Bet, store_bet
+from common.utils import Bet, store_bets
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -56,7 +56,7 @@ class Server:
                 birthdate=user_data.nacimiento.isoformat(),
                 number=user_data.numero,
             )
-            store_bet([bet])
+            store_bets([bet])
             logging.info(f'action: apuesta_almacenada | result: success | dni: {user_data.documento} | numero: {user_data.numero}')    
 
             response = encode_response_message(user_data)
