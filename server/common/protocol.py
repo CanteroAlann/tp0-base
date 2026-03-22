@@ -5,6 +5,7 @@ import struct
 
 LENGTH_PREFIX_FORMAT = '>I'
 HEADER_FORMAT = '>HH'
+AGENCY_FORMAT = '>H'
 DATE_FORMAT = '>HBB'
 NUMBERS_FORMAT = '>II'
 
@@ -17,6 +18,7 @@ class Header:
 
 @dataclass
 class UserData:
+    agencia: int
     nombre: str
     apellido: str
     nacimiento: date
@@ -57,6 +59,13 @@ def decode_user_data(payload):
 
     offset = header_size
 
+    agency_size = struct.calcsize(AGENCY_FORMAT)
+    if len(payload) < offset + agency_size:
+        raise ProtocolError('payload too short for agencia')
+
+    agencia = struct.unpack(AGENCY_FORMAT, payload[offset:offset + agency_size])[0]
+    offset += agency_size
+
     nombre_end = offset + header.nombre_length
     apellido_end = nombre_end + header.apellido_length
 
@@ -70,7 +79,7 @@ def decode_user_data(payload):
 
     date_size = struct.calcsize(DATE_FORMAT)
     numbers_size = struct.calcsize(NUMBERS_FORMAT)
-    expected_size = header_size + header.nombre_length + header.apellido_length + date_size + numbers_size
+    expected_size = header_size + agency_size + header.nombre_length + header.apellido_length + date_size + numbers_size
     if len(payload) != expected_size:
         raise ProtocolError('payload size mismatch with protocol definition')
 
@@ -81,6 +90,7 @@ def decode_user_data(payload):
     documento, numero = struct.unpack(NUMBERS_FORMAT, payload[offset:offset + numbers_size])
 
     return UserData(
+        agencia=agencia,
         nombre=nombre,
         apellido=apellido,
         nacimiento=nacimiento,
@@ -91,6 +101,7 @@ def decode_user_data(payload):
 
 def encode_response_message(user_data):
     return (
+        f'agencia={user_data.agencia} '
         f'nombre={user_data.nombre} '
         f'apellido={user_data.apellido} '
         f'nacimiento={user_data.nacimiento.isoformat()} '

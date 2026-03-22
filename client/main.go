@@ -113,6 +113,7 @@ func main() {
 	PrintConfig(v)
 
 	userData, err := common.NewUserDataFromStrings(
+		v.GetString("id"),
 		v.GetString("nombre"),
 		v.GetString("apellido"),
 		v.GetString("documento"),

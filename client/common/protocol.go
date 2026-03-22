@@ -18,6 +18,7 @@ type Message struct {
 }
 
 type UserData struct {
+	Agencia    uint16
 	Nombre     string
 	Apellido   string
 	Nacimiento time.Time
@@ -25,7 +26,12 @@ type UserData struct {
 	Numero     uint32
 }
 
-func NewUserDataFromStrings(nombre, apellido, documentoRaw, nacimientoRaw, numeroRaw string) (UserData, error) {
+func NewUserDataFromStrings(agenciaRaw, nombre, apellido, documentoRaw, nacimientoRaw, numeroRaw string) (UserData, error) {
+	agencia, err := strconv.ParseUint(agenciaRaw, 10, 16)
+	if err != nil {
+		return UserData{}, err
+	}
+
 	nacimiento, err := time.Parse("2006-01-02", nacimientoRaw)
 	if err != nil {
 		return UserData{}, err
@@ -42,6 +48,7 @@ func NewUserDataFromStrings(nombre, apellido, documentoRaw, nacimientoRaw, numer
 	}
 
 	return UserData{
+		Agencia:    uint16(agencia),
 		Nombre:     nombre,
 		Apellido:   apellido,
 		Nacimiento: nacimiento,
@@ -62,6 +69,10 @@ func NewMessage(u UserData) (Message, error) {
 	buf := new(bytes.Buffer)
 
 	if err := binary.Write(buf, binary.BigEndian, header); err != nil {
+		return Message{}, err
+	}
+
+	if err := binary.Write(buf, binary.BigEndian, u.Agencia); err != nil {
 		return Message{}, err
 	}
 
