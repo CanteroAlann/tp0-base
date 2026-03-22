@@ -101,10 +101,7 @@ def decode_user_data(payload):
 
 def encode_response_message(user_data):
     return (
-        f'agencia={user_data.agencia} '
-        f'nombre={user_data.nombre} '
-        f'apellido={user_data.apellido} '
-        f'nacimiento={user_data.nacimiento.isoformat()} '
-        f'documento={user_data.documento} '
-        f'numero={user_data.numero}\n'
+        f'dni={user_data.documento} '
+        f'numero={user_data.numero} '
+        f'\n'
     ).encode('utf-8')

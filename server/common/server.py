@@ -3,6 +3,7 @@ import logging
 import signal
 
 from common.protocol import ProtocolError, encode_response_message, receive_user_data
+from common.utils import Bet, store_bet
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -47,6 +48,16 @@ class Server:
             addr = client_sock.getpeername()
             payload_length, user_data = receive_user_data(client_sock)
             logging.info(f'action: receive_message | result: success | ip: {addr[0]} | length: {payload_length} | msg: {user_data}')
+            bet = Bet(
+                agency=user_data.agencia,
+                first_name=user_data.nombre,
+                last_name=user_data.apellido,
+                document=user_data.documento,
+                birthdate=user_data.nacimiento.isoformat(),
+                number=user_data.numero,
+            )
+            store_bet([bet])
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {user_data.documento} | numero: {user_data.numero}')    
 
             response = encode_response_message(user_data)
             client_sock.sendall(response)

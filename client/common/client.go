@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -13,6 +14,27 @@ import (
 )
 
 var log = logging.MustGetLogger("log")
+
+func parseResponseFieldValues(response string) (string, string, bool) {
+	fields := strings.Fields(response)
+	parsed := map[string]string{}
+
+	for _, field := range fields {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		parsed[parts[0]] = parts[1]
+	}
+
+	dni, dniOK := parsed["dni"]
+	numero, numeroOK := parsed["numero"]
+	if !dniOK || !numeroOK {
+		return "", "", false
+	}
+
+	return dni, numero, true
+}
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
@@ -117,13 +139,6 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		// TODO: Modify the send to avoid short-write
-		// fmt.Fprintf(
-		// 	c.conn,
-		// 	"[CLIENT %v] Message N°%v\n",
-		// 	c.config.ID,
-		// 	msgID,
-		// )
 		rta, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
@@ -135,10 +150,16 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			rta,
-		)
+		dni, numero, ok := parseResponseFieldValues(rta)
+		if !ok {
+			log.Errorf("action: receive_message | result: fail | client_id: %v | error: invalid_response_format | msg: %v",
+				c.config.ID,
+				rta,
+			)
+			return
+		}
+
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", dni, numero)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
