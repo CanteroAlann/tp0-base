@@ -2,6 +2,7 @@ import socket
 import logging
 import signal
 
+from common.protocol import ProtocolError, encode_response_message, receive_user_data
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -43,14 +44,16 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
             addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
+            payload_length, user_data = receive_user_data(client_sock)
+            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | length: {payload_length} | msg: {user_data}')
+
+            response = encode_response_message(user_data)
+            client_sock.sendall(response)
+        except (ConnectionError, UnicodeDecodeError, ProtocolError, ValueError) as e:
+            logging.error(f'action: receive_message | result: fail | error: {e}')
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f'action: receive_message | result: fail | error: {e}')
         finally:
             client_sock.close()
 

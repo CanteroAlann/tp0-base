@@ -14,6 +14,7 @@ services:
   client1:
     image: client:latest
     container_name: client1
+    env_file: ./envs/client1.env
     entrypoint: /client
     user: 1000:1000
     networks:

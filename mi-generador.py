@@ -44,6 +44,7 @@ def generate_compose(filename, count):
         compose_data["services"][name] = {
             "image": "client:latest",
             "container_name": name,
+            "env_file": f"./envs/client{i}.env",
             "entrypoint": "/client",
             "user": f"{current_uid}:{current_gid}",
             "networks": ["testing_net"],

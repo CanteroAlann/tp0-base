@@ -1,9 +1,9 @@
 server:
   address: "server:12345"
 loop:
-  amount: 500
+  amount: 1
   period: "150ms"
 log:
-  level: "INFO"
+  level: "DEBUG"
 batch:
   maxAmount: 10
