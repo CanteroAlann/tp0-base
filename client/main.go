@@ -37,11 +37,8 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("loop.period")
 	v.BindEnv("loop.amount")
 	v.BindEnv("log.level")
-	v.BindEnv("nombre", "NOMBRE")
-	v.BindEnv("apellido", "APELLIDO")
-	v.BindEnv("documento", "DOCUMENTO")
-	v.BindEnv("nacimiento", "NACIMIENTO")
-	v.BindEnv("numero", "NUMERO")
+	v.BindEnv("batch.MaxAmount")
+	v.BindEnv("dataPath", "DATA_PATH")
 	// Try to read configuration from config file. If config file
 	// does not exists then ReadInConfig will fail but configuration
 	// can be loaded from the environment variables so we shouldn't
@@ -85,17 +82,13 @@ func InitLogger(logLevel string) error {
 // PrintConfig Print all the configuration parameters of the program.
 // For debugging purposes only
 func PrintConfig(v *viper.Viper) {
-	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s | nombre: %s | apellido: %s | documento: %s | nacimiento: %s | numero: %s",
+	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s | data_path: %s",
 		v.GetString("id"),
 		v.GetString("server.address"),
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
-		v.GetString("nombre"),
-		v.GetString("apellido"),
-		v.GetString("documento"),
-		v.GetString("nacimiento"),
-		v.GetString("numero"),
+		v.GetString("dataPath"),
 	)
 }
 
@@ -112,24 +105,17 @@ func main() {
 	// Print program config with debugging purposes
 	PrintConfig(v)
 
-	userData, err := common.NewUserDataFromStrings(
-		v.GetString("id"),
-		v.GetString("nombre"),
-		v.GetString("apellido"),
-		v.GetString("documento"),
-		v.GetString("nacimiento"),
-		v.GetString("numero"),
-	)
 	if err != nil {
 		log.Criticalf("Could not parse user data from configuration: %v", err)
 	}
 
 	clientConfig := common.ClientConfig{
-		ServerAddress: v.GetString("server.address"),
-		ID:            v.GetString("id"),
-		LoopAmount:    v.GetInt("loop.amount"),
-		LoopPeriod:    v.GetDuration("loop.period"),
-		UserData:      userData,
+		ServerAddress:  v.GetString("server.address"),
+		ID:             v.GetString("id"),
+		LoopAmount:     v.GetInt("loop.amount"),
+		LoopPeriod:     v.GetDuration("loop.period"),
+		BatchMaxAmount: v.GetInt("batch.maxAmount"),
+		DataPath:       v.GetString("dataPath"),
 	}
 
 	client := common.NewClient(clientConfig)

@@ -38,11 +38,12 @@ func parseResponseFieldValues(response string) (string, string, bool) {
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
-	UserData      UserData
+	ID             string
+	ServerAddress  string
+	LoopAmount     int
+	LoopPeriod     time.Duration
+	BatchMaxAmount int
+	DataPath       string
 }
 
 // Client Entity that encapsulates how
@@ -111,13 +112,13 @@ func (c *Client) StartClientLoop() {
 			time.Sleep(c.config.LoopPeriod)
 		}
 
-		msg, err := NewMessage(c.config.UserData)
-		if err != nil {
-			log.Errorf("action: create_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			return
+		sentCount, err := SendData(c.conn, c.config.BatchMaxAmount, c.config.DataPath, c.config.ID)
+
+		log.Infof("action: message_send | result: success | amount: %s", sentCount)
+
+		msg := Message{
+			PayloadSize: 0,
+			Payload:     []byte{},
 		}
 
 		werr := binary.Write(c.conn, binary.BigEndian, msg.PayloadSize)
@@ -129,6 +130,7 @@ func (c *Client) StartClientLoop() {
 			c.conn.Close()
 			return
 		}
+
 		_, err = c.conn.Write(msg.Payload)
 		if err != nil {
 			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",

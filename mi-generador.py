@@ -56,11 +56,13 @@ def generate_compose(filename, count):
             "user": f"{current_uid}:{current_gid}",
             "networks": ["testing_net"],
             "environment": [
-                f"CLI_ID={i}"
+                f"CLI_ID={i}",
+                "DATA_PATH=/data/agency.csv"
             ],
             "volumes": [
                 f"./data/{name}:/app/data",
-                "./client/config.yaml:/config.yaml:ro"
+                "./client/config.yaml:/config.yaml:ro",
+                f"./data/dataset/agency-{i}.csv:/data/agency.csv:ro"
             ],
             "depends_on": ["server"]
         }

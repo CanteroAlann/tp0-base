@@ -22,9 +22,11 @@ services:
     - testing_net
     environment:
     - CLI_ID=1
+    - DATA_PATH=/data/agency.csv
     volumes:
     - ./data/client1:/app/data
     - ./client/config.yaml:/config.yaml:ro
+    - ./data/dataset/agency-1.csv:/data/agency.csv:ro
     depends_on:
     - server
 networks:
