@@ -47,7 +47,6 @@ class Server:
         try:
             addr = client_sock.getpeername()
             payload_length, user_data = receive_user_data(client_sock)
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | length: {payload_length} | msg: {user_data}')
             bets = []
             for data in user_data:
                 bet = Bet(agency=data.agencia, first_name=data.nombre, last_name=data.apellido, document=data.documento, birthdate=data.nacimiento.isoformat(), number=data.numero)

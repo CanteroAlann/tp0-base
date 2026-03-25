@@ -100,7 +100,7 @@ func (c *Client) StartClientLoop() {
 
 		log.Infof("action: message_send | result: success | amount: %s", sentCount)
 
-		rta, err := bufio.NewReader(c.conn).ReadString('\n')
+		_, err = bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
 		if err != nil {
@@ -110,10 +110,6 @@ func (c *Client) StartClientLoop() {
 			)
 			return
 		}
-		log.Infof("action: receive_message | result: success | client_id: %v | response: %s",
-			c.config.ID,
-			rta,
-		)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)

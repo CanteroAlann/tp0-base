@@ -13,12 +13,11 @@ type BettingReader struct {
 func NewBettingReader(path string) (*BettingReader, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Infof("action: open_data_file | result: fail | path: %s | error: %v", path, err)
 		return nil, err
 	}
 
 	reader := csv.NewReader(f)
-	log.Infof("action: open_data_file | result: success | path: %s", path)
+	//log.Infof("action: open_data_file | result: success | path: %s", path)
 
 	return &BettingReader{
 		file:   f,
@@ -32,7 +31,7 @@ func (br *BettingReader) ReadNext(agenciaID string) (UserData, error) {
 		log.Infof("action: read_line | result: fail | client_id: %s | error: %v", agenciaID, err)
 		return UserData{}, err
 	}
-	log.Infof("action: read_csv_record | result: success | client_id: %s | record: %v", agenciaID, record)
+	//log.Infof("action: read_csv_record | result: success | client_id: %s | record: %v", agenciaID, record)
 
 	return NewUserDataFromStrings(
 		agenciaID,

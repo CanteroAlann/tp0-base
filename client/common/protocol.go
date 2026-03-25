@@ -45,7 +45,6 @@ func SendData(conn net.Conn, br *BettingReader, batchMaxAmount int, agenciaID st
 			}
 			return sentCount, err
 		}
-		log.Infof("action: read_user_data | result: success | client_id: %s | user_data: %v", agenciaID, userData)
 		userDataList = append(userDataList, userData)
 	}
 
