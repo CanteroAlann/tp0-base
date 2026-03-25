@@ -48,18 +48,14 @@ class Server:
             addr = client_sock.getpeername()
             payload_length, user_data = receive_user_data(client_sock)
             logging.info(f'action: receive_message | result: success | ip: {addr[0]} | length: {payload_length} | msg: {user_data}')
-            bet = Bet(
-                agency=user_data.agencia,
-                first_name=user_data.nombre,
-                last_name=user_data.apellido,
-                document=user_data.documento,
-                birthdate=user_data.nacimiento.isoformat(),
-                number=user_data.numero,
-            )
-            store_bets([bet])
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {user_data.documento} | numero: {user_data.numero}')    
+            bets = []
+            for data in user_data:
+                bet = Bet(agency=data.agencia, first_name=data.nombre, last_name=data.apellido, document=data.documento, birthdate=data.nacimiento.isoformat(), number=data.numero)
+                bets.append(bet)
+            store_bets(bets)
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {payload_length}')    
 
-            response = encode_response_message(user_data)
+            response = f'Bets received: {payload_length} \n'.encode('utf-8')
             client_sock.sendall(response)
         except (ConnectionError, UnicodeDecodeError, ProtocolError, ValueError) as e:
             logging.error(f'action: receive_message | result: fail | error: {e}')

@@ -32,42 +32,34 @@ type UserData struct {
 	Numero     uint32
 }
 
-func SendData(conn net.Conn, batchMaxAmount int, dataPath string, agenciaID string) (int, error) {
-	br, err := NewBettingReader(dataPath)
-	if err != nil {
-		log.Infof("action: create_betting_reader | result: fail | client_id: %s | error: %v", agenciaID, err)
-		return 0, err
-	}
-	defer br.Close()
-
+func SendData(conn net.Conn, br *BettingReader, batchMaxAmount int, agenciaID string) (int, error) {
 	sentCount := 0
-	for {
-		var userDataList []UserData
+	var userDataList []UserData
 
-		for i := 0; i < batchMaxAmount; i++ {
-			userData, err := br.ReadNext(agenciaID)
+	for i := 0; i < batchMaxAmount; i++ {
+		userData, err := br.ReadNext(agenciaID)
 
-			if err != nil {
-				if err.Error() == "EOF" {
-					return sentCount, nil
-				}
-				return sentCount, err
-			}
-			log.Infof("action: read_user_data | result: success | client_id: %s | user_data: %v", agenciaID, userData)
-			userDataList = append(userDataList, userData)
-		}
-
-		batchMessage, err := NewBatchMessage(userDataList)
 		if err != nil {
+			if err.Error() == "EOF" {
+				return sentCount, nil
+			}
 			return sentCount, err
 		}
-
-		if err := SendBatchMessage(conn, batchMessage); err != nil {
-			return sentCount, err
-		}
-
-		sentCount += len(userDataList)
+		log.Infof("action: read_user_data | result: success | client_id: %s | user_data: %v", agenciaID, userData)
+		userDataList = append(userDataList, userData)
 	}
+
+	batchMessage, err := NewBatchMessage(userDataList)
+	if err != nil {
+		return sentCount, err
+	}
+
+	if err := SendBatchMessage(conn, batchMessage); err != nil {
+		return sentCount, err
+	}
+
+	sentCount += len(userDataList)
+	return sentCount, nil
 }
 
 func NewUserDataFromStrings(agenciaRaw, nombre, apellido, documentoRaw, nacimientoRaw, numeroRaw string) (UserData, error) {

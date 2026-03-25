@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 import struct
+import logging
 
 
 LENGTH_PREFIX_FORMAT = '>I'
@@ -42,11 +43,17 @@ def _read_exact(sock, size):
 
 def receive_user_data(sock):
     raw_len = _read_exact(sock, struct.calcsize(LENGTH_PREFIX_FORMAT))
-    payload_length = struct.unpack(LENGTH_PREFIX_FORMAT, raw_len)[0]
-
-    payload = _read_exact(sock, payload_length)
-    user_data = decode_user_data(payload)
-    return payload_length, user_data
+    batch_length = struct.unpack(LENGTH_PREFIX_FORMAT, raw_len)[0]
+    logging.debug(f'Expecting batch of length: {batch_length}')
+    data = []
+    for _ in range(batch_length):
+        msg_len = _read_exact(sock, struct.calcsize(LENGTH_PREFIX_FORMAT))
+        payload_length = struct.unpack(LENGTH_PREFIX_FORMAT, msg_len)[0]
+        logging.debug(f'Expecting message of length: {payload_length}')
+        payload = _read_exact(sock, payload_length)
+        user_data = decode_user_data(payload)
+        data.append(user_data)
+    return batch_length,data
 
 
 def decode_user_data(payload):

@@ -2,11 +2,9 @@ package common
 
 import (
 	"bufio"
-	"encoding/binary"
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -14,27 +12,6 @@ import (
 )
 
 var log = logging.MustGetLogger("log")
-
-func parseResponseFieldValues(response string) (string, string, bool) {
-	fields := strings.Fields(response)
-	parsed := map[string]string{}
-
-	for _, field := range fields {
-		parts := strings.SplitN(field, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		parsed[parts[0]] = parts[1]
-	}
-
-	dni, dniOK := parsed["dni"]
-	numero, numeroOK := parsed["numero"]
-	if !dniOK || !numeroOK {
-		return "", "", false
-	}
-
-	return dni, numero, true
-}
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
@@ -86,6 +63,13 @@ func (c *Client) StartClientLoop() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM)
 
+	br, err := NewBettingReader(c.config.DataPath)
+	if err != nil {
+		log.Errorf("action: open_file | result: fail | error: %v", err)
+		return
+	}
+	defer br.Close()
+
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		select {
@@ -112,34 +96,9 @@ func (c *Client) StartClientLoop() {
 			time.Sleep(c.config.LoopPeriod)
 		}
 
-		sentCount, err := SendData(c.conn, c.config.BatchMaxAmount, c.config.DataPath, c.config.ID)
+		sentCount, err := SendData(c.conn, br, c.config.BatchMaxAmount, c.config.ID)
 
 		log.Infof("action: message_send | result: success | amount: %s", sentCount)
-
-		msg := Message{
-			PayloadSize: 0,
-			Payload:     []byte{},
-		}
-
-		werr := binary.Write(c.conn, binary.BigEndian, msg.PayloadSize)
-		if werr != nil {
-			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				werr,
-			)
-			c.conn.Close()
-			return
-		}
-
-		_, err = c.conn.Write(msg.Payload)
-		if err != nil {
-			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			c.conn.Close()
-			return
-		}
 
 		rta, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
@@ -151,17 +110,10 @@ func (c *Client) StartClientLoop() {
 			)
 			return
 		}
-
-		dni, numero, ok := parseResponseFieldValues(rta)
-		if !ok {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: invalid_response_format | msg: %v",
-				c.config.ID,
-				rta,
-			)
-			return
-		}
-
-		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %s", dni, numero)
+		log.Infof("action: receive_message | result: success | client_id: %v | response: %s",
+			c.config.ID,
+			rta,
+		)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
