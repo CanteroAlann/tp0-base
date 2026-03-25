@@ -41,6 +41,14 @@ func SendData(conn net.Conn, br *BettingReader, batchMaxAmount int, agenciaID st
 
 		if err != nil {
 			if err.Error() == "EOF" {
+				batchMessage, err := NewBatchMessage(userDataList)
+				if err != nil {
+					return sentCount, err
+				}
+				if err := SendBatchMessage(conn, batchMessage); err != nil {
+					return sentCount, err
+				}
+				sentCount += len(userDataList)
 				return sentCount, nil
 			}
 			return sentCount, err
