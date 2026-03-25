@@ -62,7 +62,7 @@ def generate_compose(filename, count):
             "volumes": [
                 f"./data/{name}:/app/data",
                 "./client/config.yaml:/config.yaml:ro",
-                f"./data/agency-{i}.csv:/data/agency.csv:ro"
+                f"./.data/agency-{i}.csv:/data/agency.csv:ro"
             ],
             "depends_on": ["server"]
         }
