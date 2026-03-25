@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 
-from common.protocol import ProtocolError, encode_response_message, receive_user_data
+from common.protocol import ProtocolProcessedError, encode_response_message, receive_user_data
 from common.utils import Bet, store_bets
 
 class Server:
@@ -59,8 +59,13 @@ class Server:
             client_sock.sendall(response)
         except (ConnectionError, UnicodeDecodeError, ProtocolError, ValueError) as e:
             logging.error(f'action: receive_message | result: fail | error: {e}')
+        except ProtocolProcessedError as e:
+            logging.error(f'action: apuesta_recibida | result: fail | cantidad: {e.processed_count}')
+            response = f'ERROR: Processed only {e.processed_count} bets before failure\n'.encode('utf-8')
+            client_sock.sendall(response)
         except OSError as e:
             logging.error(f'action: receive_message | result: fail | error: {e}')
+
         finally:
             client_sock.close()
 
