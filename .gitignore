@@ -4,3 +4,7 @@
 # Executables
 bin/
 venv/
+.data/dataset/
+data/
+envs/
+
