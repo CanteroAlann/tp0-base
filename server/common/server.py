@@ -1,17 +1,19 @@
 import socket
 import logging
 import signal
+import struct
 
-from common.protocol import ProtocolProcessedError, encode_response_message, receive_user_data
-from common.utils import Bet, store_bets
+from common.protocol import ProtocolProcessedError, encode_response_message, receive_message
+from common.utils import Bet, store_bets, load_bets, has_won
 
 class Server:
     def __init__(self, port, listen_backlog):
-        # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self.running = True
+        self.finished_agencies = set()
+        self.TOTAL_AGENCIES = 5
 
         signal.signal(signal.SIGTERM, self.__handle_sigterm)
 
@@ -20,50 +22,67 @@ class Server:
         self.running = False
 
     def run(self):
-        """
-        Dummy Server loop
-
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
-        """
-
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
         while self.running:
-            client_sock = self.__accept_new_connection()
-            self.__handle_client_connection(client_sock)
+            try:
+                client_sock = self.__accept_new_connection()
+                self.__handle_client_connection(client_sock)
+            except OSError:
+                if not self.running:
+                    break
         
         logging.info('action: shutdown | result: success')
         self._server_socket.close()
 
     def __handle_client_connection(self, client_sock):
-        """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
-        """
         try:
-            addr = client_sock.getpeername()
-            payload_length, user_data = receive_user_data(client_sock)
-            bets = []
-            for data in user_data:
-                bet = Bet(agency=data.agencia, first_name=data.nombre, last_name=data.apellido, document=data.documento, birthdate=data.nacimiento.isoformat(), number=data.numero)
-                bets.append(bet)
-            store_bets(bets)
-            logging.info(f'action: apuesta_recibida | result: success | cantidad: {payload_length}')    
+            reading_bets = True
+            while reading_bets:
+                msg_type, data = receive_message(client_sock)
 
-            response = f'Bets received: {payload_length} \n'.encode('utf-8')
-            client_sock.sendall(response)
-        except (ConnectionError, UnicodeDecodeError, ProtocolError, ValueError) as e:
-            logging.error(f'action: receive_message | result: fail | error: {e}')
-        except ProtocolProcessedError as e:
-            logging.error(f'action: apuesta_recibida | result: fail | cantidad: {e.processed_count}')
-            response = f'ERROR: Processed only {e.processed_count} bets before failure\n'.encode('utf-8')
-            client_sock.sendall(response)
-        except OSError as e:
-            logging.error(f'action: receive_message | result: fail | error: {e}')
+                if msg_type == 1:
+                    payload_length, user_data = data
+                    bets = [Bet(agency=d.agencia, first_name=d.nombre, last_name=d.apellido, 
+                                document=d.documento, birthdate=d.nacimiento.isoformat(), number=d.numero) 
+                            for d in user_data]
+                    store_bets(bets)
+                    
+                    logging.info(f'action: apuesta_recibida | result: success | cantidad: {payload_length}')    
+                    client_sock.sendall(f'Bets received: {payload_length} \n'.encode('utf-8'))
+                    continue
+
+                elif msg_type == 2:
+                    agency = data
+                    self.finished_agencies.add(agency)
+                    client_sock.sendall(b'ACK\n')
+                    reading_bets = False
+                    
+                    if len(self.finished_agencies) == self.TOTAL_AGENCIES:
+                        logging.info('action: sorteo | result: success')
+
+                elif msg_type == 3:
+                    agency = data
+                    
+                    if len(self.finished_agencies) < self.TOTAL_AGENCIES:
+                        logging.debug(f'action: query_winners | result: fail | error: Not all agencies have finished yet (finished: {len(self.finished_agencies)}/{self.TOTAL_AGENCIES})')
+                        client_sock.sendall(b'\x00')
+
+                    else:
+                        winners_dni = []
+                        for bet in load_bets():
+                            if bet.agency == agency and has_won(bet):
+                                winners_dni.append(bet.document)
+                        
+                        
+                        response = bytearray([0x01])
+                        response.extend(struct.pack('>I', len(winners_dni)))
+                        for dni in winners_dni:
+                            response.extend(struct.pack('>I', dni))
+                        
+                        client_sock.sendall(response)
+                    reading_bets = False
+
+        except Exception as e:
+            logging.error(f'action: handle_message | result: fail | error: {e}')
 
         finally:
             client_sock.close()

@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -52,8 +53,8 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
+	var AllBetsSent bool = false
+	currentDelay := c.config.LoopPeriod
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM)
@@ -66,58 +67,77 @@ func (c *Client) StartClientLoop() {
 	defer br.Close()
 
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
-		// Create the connection the server in every loop iteration. Send an
 		select {
 		case <-sigs:
 			log.Infof("action: sigterm_received | result: success | client_id: %v", c.config.ID)
+			if c.conn != nil {
+				c.conn.Close()
+			}
 			return
-
 		default:
 		}
 
-		for {
+		if AllBetsSent || c.conn == nil {
 			err := c.createClientSocket()
-			if err == nil {
-				break
+			if err != nil {
+				time.Sleep(currentDelay)
+				continue
 			}
-
-			select {
-			case <-sigs:
-				log.Infof("action: sigterm_received | result: success | client_id: %v", c.config.ID)
-				return
-			default:
-			}
-
-			time.Sleep(c.config.LoopPeriod)
 		}
 
-		sentCount, sendErr := SendData(c.conn, br, c.config.BatchMaxAmount, c.config.ID)
+		if AllBetsSent {
+			SendQueryMessage(c.conn, c.config.ID)
+			log.Infof("action: send_query_message | result: success | client_id: %v", c.config.ID)
+
+			resp, err := bufio.NewReader(c.conn).ReadString('\n')
+			c.conn.Close()
+			c.conn = nil
+
+			if err == nil && strings.Contains(resp, "FINISHED") {
+				log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+				return
+			}
+
+			time.Sleep(currentDelay)
+			currentDelay *= 2
+			if currentDelay > 60*time.Second {
+				currentDelay = 60 * time.Second
+			}
+			continue
+		}
+
+		sentCount, sendErr := SendBets(c.conn, br, c.config.BatchMaxAmount, c.config.ID)
 
 		if sentCount > 0 {
-			log.Infof("action: message_send | result: success | cantidad: %v", sentCount)
-
 			_, err = bufio.NewReader(c.conn).ReadString('\n')
+			log.Infof("action: receive_ack | result: success | sent_count: %v", sentCount)
 			if err != nil {
-				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-					c.config.ID, err)
+				log.Errorf("action: receive_ack_aca | error: %v", err)
 				c.conn.Close()
-				return
+				c.conn = nil
 			}
 		}
-
-		c.conn.Close()
 
 		if sendErr != nil {
 			if sendErr.Error() == "EOF" {
-				break
+				AllBetsSent = true
+				SendFinishMessage(c.conn, c.config.ID)
+				_, ackErr := bufio.NewReader(c.conn).ReadString('\n')
+				if ackErr != nil {
+					log.Errorf("action: receive_finish_ack | error: %v", ackErr)
+				}
+
+				log.Infof("action: send_finish_message | result: success | client_id: %v", c.config.ID)
+				c.conn.Close()
+				c.conn = nil
+				currentDelay = c.config.LoopPeriod
+			} else {
+				log.Errorf("action: send_data | result: fail | error: %v", sendErr)
+				c.conn.Close()
+				c.conn = nil
 			}
-			log.Errorf("action: send_data | result: fail | error: %v", sendErr)
-			return
 		}
 
-		// Esperamos un momento antes del siguiente bloque
 		time.Sleep(c.config.LoopPeriod)
-
 	}
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

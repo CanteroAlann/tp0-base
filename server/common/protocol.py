@@ -46,7 +46,26 @@ def _read_exact(sock, size):
     return bytes(data)
 
 
-def receive_user_data(sock):
+def receive_message(sock):
+    msg_type_raw = _read_exact(sock, 1)
+    msg_type = msg_type_raw[0]
+
+    logging.info(f'action: receive_message | result: success | msg_type: {msg_type}')
+
+    if msg_type == 1:
+        return msg_type, _read_bet_msg(sock)
+            
+    elif msg_type == 2 or msg_type == 3:
+        agency_raw = _read_exact(sock, struct.calcsize(AGENCY_FORMAT))
+        agency = struct.unpack(AGENCY_FORMAT, agency_raw)[0]
+        return msg_type, agency
+    
+    else:
+        logging.error(f'action: receive_message | result: fail | error: Unknown message type: {msg_type}')
+        raise ProtocolError(f'Unknown message type: {msg_type}')
+
+
+def _read_bet_msg(sock):
     raw_len = _read_exact(sock, struct.calcsize(LENGTH_PREFIX_FORMAT))
     batch_length = struct.unpack(LENGTH_PREFIX_FORMAT, raw_len)[0]
     data = []
@@ -57,7 +76,7 @@ def receive_user_data(sock):
             msg_len = _read_exact(sock, struct.calcsize(LENGTH_PREFIX_FORMAT))
             payload_length = struct.unpack(LENGTH_PREFIX_FORMAT, msg_len)[0]
             payload = _read_exact(sock, payload_length)
-            user_data = decode_user_data(payload)
+            user_data = decode_bet_data(payload)
             data.append(user_data)
             batch_processed += 1
         return batch_length,data
@@ -66,7 +85,7 @@ def receive_user_data(sock):
         raise ProtocolProcessedError(str(e), batch_processed)
 
 
-def decode_user_data(payload):
+def decode_bet_data(payload):
     header_size = struct.calcsize(HEADER_FORMAT)
     if len(payload) < header_size:
         raise ProtocolError('payload too short for header')

@@ -29,6 +29,23 @@ services:
     - ./.data/agency-1.csv:/data/agency.csv:ro
     depends_on:
     - server
+  client2:
+    image: client:latest
+    container_name: client2
+    env_file: ./envs/client2.env
+    entrypoint: /client
+    user: 1000:1000
+    networks:
+    - testing_net
+    environment:
+    - CLI_ID=2
+    - DATA_PATH=/data/agency.csv
+    volumes:
+    - ./data/client2:/app/data
+    - ./client/config.yaml:/config.yaml:ro
+    - ./.data/agency-2.csv:/data/agency.csv:ro
+    depends_on:
+    - server
 networks:
   testing_net:
     ipam:

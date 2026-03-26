@@ -32,7 +32,14 @@ type UserData struct {
 	Numero     uint32
 }
 
-func SendData(conn net.Conn, br *BettingReader, batchMaxAmount int, agenciaID string) (int, error) {
+const (
+	MsgTypeBets   byte = 1
+	MsgTypeFinish byte = 2
+	MsgTypeQuery  byte = 3
+	AckMessage    byte = 4
+)
+
+func SendBets(conn net.Conn, br *BettingReader, batchMaxAmount int, agenciaID string) (int, error) {
 	sentCount := 0
 	var userDataList []UserData
 
@@ -42,6 +49,7 @@ func SendData(conn net.Conn, br *BettingReader, batchMaxAmount int, agenciaID st
 		if err != nil {
 			if err.Error() == "EOF" {
 				if len(userDataList) > 0 {
+					log.Infof("action: send_batch_message | result: success | batch_size: %v", len(userDataList))
 					batchMessage, err2 := NewBatchMessage(userDataList)
 					if err2 != nil {
 						return sentCount, err2
@@ -66,7 +74,7 @@ func SendData(conn net.Conn, br *BettingReader, batchMaxAmount int, agenciaID st
 	if err := SendBatchMessage(conn, batchMessage); err != nil {
 		return sentCount, err
 	}
-
+	log.Infof("action: send_batch_message | result: success | batch_size: %v", len(userDataList))
 	sentCount += len(userDataList)
 	return sentCount, nil
 }
@@ -138,7 +146,6 @@ func NewMessage(u UserData) (Message, error) {
 	if err := binary.Write(buf, binary.BigEndian, uint8(u.Nacimiento.Day())); err != nil {
 		return Message{}, err
 	}
-
 	if err := binary.Write(buf, binary.BigEndian, u.Documento); err != nil {
 		return Message{}, err
 	}
@@ -150,10 +157,6 @@ func NewMessage(u UserData) (Message, error) {
 		PayloadSize: uint32(buf.Len()),
 		Payload:     buf.Bytes(),
 	}, nil
-}
-
-func MessageSize(m Message) uint32 {
-	return m.PayloadSize + 4
 }
 
 func NewBatchMessage(userDataList []UserData) (BatchMessage, error) {
@@ -176,6 +179,10 @@ func NewBatchMessage(userDataList []UserData) (BatchMessage, error) {
 func SendBatchMessage(conn net.Conn, batch BatchMessage) error {
 	buf := new(bytes.Buffer)
 
+	if err := binary.Write(buf, binary.BigEndian, MsgTypeBets); err != nil {
+		return err
+	}
+
 	if err := binary.Write(buf, binary.BigEndian, batch.Amount); err != nil {
 		return err
 	}
@@ -191,4 +198,44 @@ func SendBatchMessage(conn net.Conn, batch BatchMessage) error {
 
 	_, err := conn.Write(buf.Bytes())
 	return err
+}
+
+func SendFinishMessage(conn net.Conn, agenciaID string) error {
+	agencia, err := strconv.ParseUint(agenciaID, 10, 16)
+	if err != nil {
+		return err
+	}
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, MsgTypeFinish)
+	binary.Write(buf, binary.BigEndian, uint16(agencia))
+	_, err = conn.Write(buf.Bytes())
+	return err
+}
+
+func SendQueryMessage(conn net.Conn, agenciaID string) (uint32, []uint32, error) {
+	agencia, err := strconv.ParseUint(agenciaID, 10, 16)
+	if err != nil {
+		return 0, nil, err
+	}
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, MsgTypeQuery)
+	binary.Write(buf, binary.BigEndian, uint16(agencia))
+
+	if _, err := conn.Write(buf.Bytes()); err != nil {
+		return 0, nil, err
+	}
+
+	// var count uint32
+	// if err := binary.Read(conn, binary.BigEndian, &count); err != nil {
+	// 	return 0, nil, err
+	// }
+
+	// winners := make([]uint32, count)
+	// for i := uint32(0); i < count; i++ {
+	// 	if err := binary.Read(conn, binary.BigEndian, &winners[i]); err != nil {
+	// 		return 0, nil, err
+	// 	}
+	// }
+
+	return 0, nil, nil
 }
