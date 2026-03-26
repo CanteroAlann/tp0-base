@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/csv"
+	"io"
 	"os"
 )
 
@@ -28,6 +29,9 @@ func NewBettingReader(path string) (*BettingReader, error) {
 func (br *BettingReader) ReadNext(agenciaID string) (UserData, error) {
 	record, err := br.reader.Read()
 	if err != nil {
+		if err == io.EOF {
+			return UserData{}, err
+		}
 		log.Infof("action: read_line | result: fail | client_id: %s | error: %v", agenciaID, err)
 		return UserData{}, err
 	}

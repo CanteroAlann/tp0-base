@@ -96,22 +96,31 @@ func (c *Client) StartClientLoop() {
 			time.Sleep(c.config.LoopPeriod)
 		}
 
-		sentCount, err := SendData(c.conn, br, c.config.BatchMaxAmount, c.config.ID)
+		sentCount, sendErr := SendData(c.conn, br, c.config.BatchMaxAmount, c.config.ID)
 
-		log.Infof("action: message_send | result: success | cantidad: %v", sentCount)
+		if sentCount > 0 {
+			log.Infof("action: message_send | result: success | cantidad: %v", sentCount)
 
-		_, err = bufio.NewReader(c.conn).ReadString('\n')
+			_, err = bufio.NewReader(c.conn).ReadString('\n')
+			if err != nil {
+				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+					c.config.ID, err)
+				c.conn.Close()
+				return
+			}
+		}
+
 		c.conn.Close()
 
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
+		if sendErr != nil {
+			if sendErr.Error() == "EOF" {
+				break
+			}
+			log.Errorf("action: send_data | result: fail | error: %v", sendErr)
 			return
 		}
 
-		// Wait a time between sending one message and the next one
+		// Esperamos un momento antes del siguiente bloque
 		time.Sleep(c.config.LoopPeriod)
 
 	}
