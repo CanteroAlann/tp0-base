@@ -98,7 +98,7 @@ func (c *Client) StartClientLoop() {
 
 		sentCount, err := SendData(c.conn, br, c.config.BatchMaxAmount, c.config.ID)
 
-		log.Infof("action: message_send | result: success | amount: %s", sentCount)
+		log.Infof("action: message_send | result: success | cantidad: %v", sentCount)
 
 		_, err = bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()

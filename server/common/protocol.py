@@ -49,7 +49,6 @@ def _read_exact(sock, size):
 def receive_user_data(sock):
     raw_len = _read_exact(sock, struct.calcsize(LENGTH_PREFIX_FORMAT))
     batch_length = struct.unpack(LENGTH_PREFIX_FORMAT, raw_len)[0]
-    logging.debug(f'Expecting batch of length: {batch_length}')
     data = []
     batch_processed = 0
 
@@ -57,13 +56,12 @@ def receive_user_data(sock):
         for _ in range(batch_length):
             msg_len = _read_exact(sock, struct.calcsize(LENGTH_PREFIX_FORMAT))
             payload_length = struct.unpack(LENGTH_PREFIX_FORMAT, msg_len)[0]
-            logging.debug(f'Expecting message of length: {payload_length}')
             payload = _read_exact(sock, payload_length)
             user_data = decode_user_data(payload)
             data.append(user_data)
             batch_processed += 1
         return batch_length,data
-        
+
     except ProtocolError as e:
         raise ProtocolProcessedError(str(e), batch_processed)
 

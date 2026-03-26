@@ -26,7 +26,7 @@ services:
     volumes:
     - ./data/client1:/app/data
     - ./client/config.yaml:/config.yaml:ro
-    - ./data/agency-1.csv:/data/agency.csv:ro
+    - ./.data/agency-1.csv:/data/agency.csv:ro
     depends_on:
     - server
 networks:

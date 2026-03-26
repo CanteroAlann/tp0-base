@@ -52,7 +52,7 @@ class Server:
                 bet = Bet(agency=data.agencia, first_name=data.nombre, last_name=data.apellido, document=data.documento, birthdate=data.nacimiento.isoformat(), number=data.numero)
                 bets.append(bet)
             store_bets(bets)
-            #logging.info(f'action: apuesta_recibida | result: success | cantidad: {payload_length}')    
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {payload_length}')    
 
             response = f'Bets received: {payload_length} \n'.encode('utf-8')
             client_sock.sendall(response)
