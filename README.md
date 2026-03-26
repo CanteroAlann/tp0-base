@@ -72,6 +72,4 @@ Estos diagramas muestran como se envian los distintos tipos de mensajes a traves
 | Tipo | 1 byte | byte | `0x03` (Query) |
 | Agencia | 2 bytes | uint16 BE | Agencia que consulta ganadores |
 
-### protocolo
 
-En esta subseccion se documentara el protocolo de comunicacion, incluyendo formato de mensajes, codigos de estado y reglas de intercambio.
